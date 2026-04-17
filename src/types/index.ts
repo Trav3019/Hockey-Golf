@@ -1,4 +1,4 @@
-export type LeagueType = 'nhl' | 'ahl' | 'junior' | 'european' | 'international';
+export type LeagueType = 'nhl' | 'ahl' | 'minor-pro' | 'junior' | 'european' | 'ncaa' | 'international';
 
 export interface League {
   id: string;
@@ -41,6 +41,25 @@ export interface GolfRound {
   scoreDifferential: number;
   notes?: string;
   scorecardImage?: string;
+}
+
+export interface Comment {
+  id: string;
+  roundId: string;
+  authorPlayerId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface UserAccount {  id: string;
+  playerId: string;
+  email: string;
+  passwordHash: string;
+  status: 'pending' | 'approved' | 'rejected';
+  bio?: string;
+  homeCourse?: string;
+  profilePhoto?: string;
+  joinedAt: string;
 }
 
 export interface HandicapData {
