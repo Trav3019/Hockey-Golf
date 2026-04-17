@@ -4,7 +4,7 @@ import { getPlayer } from '../data/players';
 import { getLeague } from '../data/leagues';
 import { useRounds } from '../hooks/useRounds';
 import { calcDifferential } from '../utils/handicap';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, Camera, X } from 'lucide-react';
 
 const POPULAR_COURSES = [
   { name: 'Pebble Beach Golf Links', rating: 75.5, slope: 145 },
@@ -38,6 +38,7 @@ export default function AddRoundPage() {
     grossScore: '',
     notes: '',
   });
+  const [scorecardImage, setScorecardImage] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const filteredCourses = useMemo(
@@ -70,6 +71,20 @@ export default function AddRoundPage() {
     setShowSuggestions(false);
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Limit to 5 MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5 MB.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => setScorecardImage(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!playerId) return;
@@ -81,6 +96,7 @@ export default function AddRoundPage() {
       slopeRating: Number(form.slopeRating),
       grossScore: Number(form.grossScore),
       notes: form.notes || undefined,
+      scorecardImage: scorecardImage ?? undefined,
     });
     navigate(`/player/${playerId}`);
   }
@@ -245,6 +261,43 @@ export default function AddRoundPage() {
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             className="w-full px-4 py-2.5 rounded-lg bg-rink-800 border border-rink-700 text-white placeholder:text-rink-500 text-sm focus:outline-none focus:border-ice-500"
           />
+        </div>
+
+        {/* Scorecard photo */}
+        <div>
+          <label className="block text-sm font-semibold text-rink-200 mb-1.5">
+            Scorecard Photo{' '}
+            <span className="font-normal text-rink-500">(optional — for verification)</span>
+          </label>
+          {scorecardImage ? (
+            <div className="relative rounded-lg overflow-hidden border border-rink-700">
+              <img
+                src={scorecardImage}
+                alt="Scorecard"
+                className="w-full max-h-64 object-contain bg-rink-900"
+              />
+              <button
+                type="button"
+                onClick={() => setScorecardImage(null)}
+                className="absolute top-2 right-2 p-1 rounded-full bg-rink-900/80 text-rink-300 hover:text-white transition-colors"
+                aria-label="Remove scorecard photo"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center gap-2 w-full h-28 rounded-lg border-2 border-dashed border-rink-700 bg-rink-800 hover:border-ice-500 hover:bg-rink-800/80 cursor-pointer transition-colors">
+              <Camera size={22} className="text-rink-500" />
+              <span className="text-xs text-rink-400">Tap to upload scorecard image</span>
+              <span className="text-xs text-rink-600">JPG, PNG or HEIC · max 5 MB</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleImageChange}
+              />
+            </label>
+          )}
         </div>
 
         {/* Submit */}
