@@ -40,6 +40,7 @@ export interface GolfRound {
   grossScore: number;
   scoreDifferential: number;
   notes?: string;
+  scorecardImage?: string;
 }
 
 export interface HandicapData {
