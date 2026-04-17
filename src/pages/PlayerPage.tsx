@@ -3,16 +3,24 @@ import { useParams, Link } from 'react-router-dom';
 import { getPlayer } from '../data/players';
 import { getLeague } from '../data/leagues';
 import { useRounds } from '../hooks/useRounds';
+import { useSocial } from '../hooks/useSocial';
+import { useAuth } from '../context/AuthContext';
 import { calcHandicap } from '../utils/handicap';
 import HandicapBadge from '../components/HandicapBadge';
 import RoundCard from '../components/RoundCard';
-import { ArrowLeft, Plus, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Plus, ExternalLink, UserPlus, UserCheck, Pencil, MapPin } from 'lucide-react';
 
 export default function PlayerPage() {
   const { playerId } = useParams<{ playerId: string }>();
   const player = getPlayer(playerId ?? '');
   const league = getLeague(player?.leagueId ?? '');
+  const { currentUser, accounts } = useAuth();
   const { getPlayerRounds, deleteRound } = useRounds();
+  const { toggleFollow, isFollowing, followCount } = useSocial(currentUser?.playerId);
+
+  // Profile account for this player page
+  const profileAccount = accounts.find(a => a.playerId === playerId && a.status === 'approved');
+  const isOwnProfile = currentUser?.playerId === playerId;
 
   const rounds = useMemo(
     () => (playerId ? getPlayerRounds(playerId) : []),
@@ -51,16 +59,27 @@ export default function PlayerPage() {
 
       {/* Player header */}
       <div className="flex flex-col sm:flex-row gap-6 items-start mb-8 p-6 rounded-2xl bg-rink-900/60 border border-rink-800">
-        {/* Jersey */}
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-3xl border-2 shrink-0"
-          style={{
-            borderColor: league?.color ?? '#334155',
-            color: league?.color ?? '#94a3b8',
-            background: `${league?.color ?? '#334155'}20`,
-          }}
-        >
-          {player.number}
+        {/* Avatar — profile photo or jersey badge */}
+        <div className="shrink-0">
+          {profileAccount?.profilePhoto ? (
+            <img
+              src={profileAccount.profilePhoto}
+              alt={player.name}
+              className="w-20 h-20 rounded-2xl object-cover border-2"
+              style={{ borderColor: league?.color ?? '#334155' }}
+            />
+          ) : (
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-3xl border-2"
+              style={{
+                borderColor: league?.color ?? '#334155',
+                color: league?.color ?? '#94a3b8',
+                background: `${league?.color ?? '#334155'}20`,
+              }}
+            >
+              {player.number}
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -99,6 +118,47 @@ export default function PlayerPage() {
               View on Elite Prospects <ExternalLink size={10} />
             </a>
           )}
+
+          {/* Bio */}
+          {profileAccount?.bio && (
+            <p className="text-sm text-rink-300 mt-2 italic">"{profileAccount.bio}"</p>
+          )}
+
+          {/* Home course */}
+          {profileAccount?.homeCourse && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-rink-400">
+              <MapPin size={11} className="shrink-0" />
+              <span>{profileAccount.homeCourse}</span>
+            </div>
+          )}
+
+          {/* Follow + Edit Profile */}
+          <div className="flex items-center gap-3 mt-3">
+            {isOwnProfile ? (
+              <Link
+                to="/edit-profile"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rink-700 hover:bg-rink-600 text-rink-200 text-sm font-bold transition-colors"
+              >
+                <Pencil size={13} /> Edit Profile
+              </Link>
+            ) : (
+              <button
+                onClick={() => player && toggleFollow(player.id)}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                  player && isFollowing(player.id)
+                    ? 'bg-rink-700 text-rink-300 hover:bg-red-900/40 hover:text-red-400'
+                    : 'bg-ice-500 hover:bg-ice-400 text-white'
+                }`}
+              >
+                {player && isFollowing(player.id)
+                  ? <><UserCheck size={14} /> Following</>
+                  : <><UserPlus size={14} /> Follow</>}
+              </button>
+            )}
+            <span className="text-sm text-rink-500">
+              <span className="text-white font-bold">{player ? followCount(player.id).toLocaleString() : 0}</span> followers
+            </span>
+          </div>
         </div>
 
         {/* Handicap */}
